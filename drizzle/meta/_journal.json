@@ -8,6 +8,13 @@
       "when": 1749476967100,
       "tag": "0000_yellow_havok",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1749489603291,
+      "tag": "0001_rapid_scrambler",
+      "breakpoints": true
     }
   ]
 }

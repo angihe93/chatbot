@@ -1,53 +1,80 @@
-import Link from "next/link";
+'use client';
 
-import { LatestPost } from "~/app/_components/post";
-import { api, HydrateClient } from "~/trpc/server";
+import { useChat } from '@ai-sdk/react';
 
-export default async function Home() {
-  const hello = await api.post.hello({ text: "from tRPC" });
+// Simple Spinner component, can replace later
+function Spinner() {
+    return <span>Loading...</span>;
+}
 
-  void api.post.getLatest.prefetch();
+export default function Page() {
+    const { messages, setMessages, input, handleInputChange, handleSubmit, status, stop, error, reload } = useChat({
+        onFinish: (message, { usage, finishReason }) => {
+            console.log('Finished streaming message:', message);
+            console.log('Token usage:', usage);
+            console.log('Finish reason:', finishReason);
+        },
+        onError: error => {
+            console.error('An error occurred:', error);
+        },
+        onResponse: response => {
+            console.log('Received HTTP response from server:', response);
+        },
+    });
+    console.log(error)
 
-  return (
-    <HydrateClient>
-      <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#2e026d] to-[#15162c] text-white">
-        <div className="container flex flex-col items-center justify-center gap-12 px-4 py-16">
-          <h1 className="text-5xl font-extrabold tracking-tight sm:text-[5rem]">
-            Create <span className="text-[hsl(280,100%,70%)]">T3</span> App
-          </h1>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-8">
-            <Link
-              className="flex max-w-xs flex-col gap-4 rounded-xl bg-white/10 p-4 hover:bg-white/20"
-              href="https://create.t3.gg/en/usage/first-steps"
-              target="_blank"
-            >
-              <h3 className="text-2xl font-bold">First Steps →</h3>
-              <div className="text-lg">
-                Just the basics - Everything you need to know to set up your
-                database and authentication.
-              </div>
-            </Link>
-            <Link
-              className="flex max-w-xs flex-col gap-4 rounded-xl bg-white/10 p-4 hover:bg-white/20"
-              href="https://create.t3.gg/en/introduction"
-              target="_blank"
-            >
-              <h3 className="text-2xl font-bold">Documentation →</h3>
-              <div className="text-lg">
-                Learn more about Create T3 App, the libraries it uses, and how
-                to deploy it.
-              </div>
-            </Link>
-          </div>
-          <div className="flex flex-col items-center gap-2">
-            <p className="text-2xl text-white">
-              {hello ? hello.greeting : "Loading tRPC query..."}
-            </p>
-          </div>
+    const handleDelete = (id: string) => {
+        // can think of messages and setMessages as a pair of state and setState in React
+        setMessages(messages.filter(message => message.id !== id))
+    }
 
-          <LatestPost />
-        </div>
-      </main>
-    </HydrateClient>
-  );
+    // custom input,  use more granular APIs like setInput and append with your custom input and submit button components: https://ai-sdk.dev/docs/ai-sdk-ui/chatbot#controlled-input
+
+    // https://ai-sdk.dev/docs/ai-sdk-ui/chatbot#custom-headers-body-and-credentials
+    // https://ai-sdk.dev/docs/ai-sdk-ui/chatbot#custom-headers-body-and-credentials
+    // https://ai-sdk.dev/docs/ai-sdk-ui/chatbot#image-generation
+    // https://ai-sdk.dev/docs/ai-sdk-ui/chatbot#attachments-experimental
+
+    return (
+        <>
+            <main className="flex min-h-screen flex-col items-center justify-center ">
+                <div className="container flex flex-col items-center justify-center gap-12 px-4 py-16">
+                    {messages.map(message => (
+                        <div key={message.id}>
+                            {message.role === 'user' ? 'User: ' : 'AI: '}
+                            {message.content}
+                            <button onClick={() => handleDelete(message.id)} className='p-1'>Delete</button>
+                        </div>
+                    ))}
+
+                    {(status === 'submitted' || status === 'streaming') && (
+                        <div>
+                            {status === 'submitted' && <Spinner />}
+                            <button type="button" onClick={() => stop()}>
+                                Stop
+                            </button>
+                        </div>
+                    )}
+
+                    {error && (
+                        <>
+                            <div>An error occurred.</div>
+                            <button type="button" onClick={() => reload()}>
+                                Retry
+                            </button>
+                        </>
+                    )}
+
+                    {((status === 'ready' || status === 'error')) && <button onClick={() => reload()} disabled={!(status === 'ready' || status === 'error')}>Regenerate</button>}
+
+
+                    <form onSubmit={handleSubmit}>
+                        <input name="prompt" value={input} onChange={handleInputChange} disabled={status !== 'ready' || error != null} className='border' />
+                        <button type="submit">Submit</button>
+                    </form>
+
+                </div>
+            </main>
+        </>
+    );
 }
