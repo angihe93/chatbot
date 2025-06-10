@@ -15,6 +15,27 @@
       "when": 1749489603291,
       "tag": "0001_rapid_scrambler",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1749583623782,
+      "tag": "0002_worthless_silver_surfer",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1749584389197,
+      "tag": "0003_purple_warlock",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1749588427996,
+      "tag": "0004_curved_unicorn",
+      "breakpoints": true
     }
   ]
 }

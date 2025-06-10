@@ -228,6 +228,16 @@ export default function Chat({
                                                         </div>
                                                     );
                                                 }
+                                                case 'addResource': {
+                                                    switch (part.toolInvocation.state) {
+                                                        case 'partial-call':
+                                                            return (
+                                                                <div key={callId}>
+                                                                    called {part.toolInvocation?.args?.toolName}
+                                                                </div>
+                                                            )
+                                                    }
+                                                }
                                             }
                                             // switch (part.toolInvocation.state) {
                                             //     case 'partial-call':
