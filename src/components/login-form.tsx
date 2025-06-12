@@ -67,7 +67,8 @@ export function LoginForm({
     const { success, message } = await signIn(values.email, values.password)
     if (success) {
       toast.success(message as string)
-      router.push("/dashboard")
+      // router.push("/dashboard")
+      router.push("/chat")
     } else {
       toast.error(message as string)
     }
@@ -77,14 +78,16 @@ export function LoginForm({
   const signInWithGoogle = async () => {
     await authClient.signIn.social({
       provider: "google",
-      callbackURL: "/dashboard"
+      // callbackURL: "/dashboard"
+      callbackURL: "/chat"
     })
   }
 
   const signInWithGithub = async () => {
     await authClient.signIn.social({
       provider: "github",
-      callbackURL: "/dashboard"
+      // callbackURL: "/dashboard"
+      callbackURL: "/chat"
     })
   }
 

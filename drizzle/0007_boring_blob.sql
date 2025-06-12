@@ -1,0 +1,2 @@
+ALTER TABLE "my-chatbot_chat" ADD COLUMN "userId" varchar(256) NOT NULL;--> statement-breakpoint
+ALTER TABLE "my-chatbot_chat" ADD CONSTRAINT "my-chatbot_chat_userId_my-chatbot_user_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."my-chatbot_user"("id") ON DELETE no action ON UPDATE no action;
