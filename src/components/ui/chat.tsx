@@ -18,7 +18,7 @@ export default function Chat({
 
     // const [lastMsgId, setLastMsgId] = useState<string | undefined>('') // for delete previous msg in DB if user regenerates
     // useEffect(() => console.log(lastMsgId), [lastMsgId])
-
+    console.log("Chat id", id)
     const { input, handleInputChange, handleSubmit, messages, setMessages, addToolResult, status, stop, error, reload } = useChat({
         id, // use the provided chat ID
         initialMessages, // initial messages if provided

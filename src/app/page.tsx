@@ -1,6 +1,9 @@
 'use client';
 
 import { useChat } from '@ai-sdk/react';
+import { useState } from 'react';
+import Chat from '~/components/ui/chat';
+import { api } from "~/trpc/react"
 
 // Simple Spinner component, can replace later
 function Spinner() {
@@ -29,51 +32,48 @@ export default function Page() {
     }
 
     // custom input,  use more granular APIs like setInput and append with your custom input and submit button components: https://ai-sdk.dev/docs/ai-sdk-ui/chatbot#controlled-input
-
-    // https://ai-sdk.dev/docs/ai-sdk-ui/chatbot#custom-headers-body-and-credentials
     // https://ai-sdk.dev/docs/ai-sdk-ui/chatbot#custom-headers-body-and-credentials
     // https://ai-sdk.dev/docs/ai-sdk-ui/chatbot#image-generation
     // https://ai-sdk.dev/docs/ai-sdk-ui/chatbot#attachments-experimental
 
+    // test hello procedure in src/server/api/routers/post.ts
+    const trpcHelloResult = api.post.hello.useQuery({ text: 'world' })
+    const chatIds = api.chat.list.useQuery()
+
+    // referencing post.tsx
+    const [selectedChat, setSelectedChat] = useState('')
+
+    const createChat = api.chat.create.useMutation({
+        onSuccess: async (data) => {
+            setSelectedChat(data)
+            console.log(`created chat ${data}`)
+        },
+    });
+
+    const { data: chatData, isLoading: isChatLoading } = api.chat.load.useQuery(
+        { chatId: selectedChat ?? "" },
+        { enabled: !!selectedChat } // only run query if selectedChat is set
+    );
+
+
     return (
         <>
             <main className="flex min-h-screen flex-col items-center justify-center ">
-                <div className="container flex flex-col items-center justify-center gap-12 px-4 py-16">
-                    {messages.map(message => (
-                        <div key={message.id}>
-                            {message.role === 'user' ? 'User: ' : 'AI: '}
-                            {message.content}
-                            <button onClick={() => handleDelete(message.id)} className='p-1'>Delete</button>
-                        </div>
-                    ))}
+                <h3>{trpcHelloResult.data?.greeting}</h3>
+                <button onClick={() => createChat.mutate()} disabled={createChat.isPending}>Start chatting</button>
 
-                    {(status === 'submitted' || status === 'streaming') && (
-                        <div>
-                            {status === 'submitted' && <Spinner />}
-                            <button type="button" onClick={() => stop()}>
-                                Stop
-                            </button>
-                        </div>
-                    )}
-
-                    {error && (
-                        <>
-                            <div>An error occurred.</div>
-                            <button type="button" onClick={() => reload()}>
-                                Retry
-                            </button>
-                        </>
-                    )}
-
-                    {((status === 'ready' || status === 'error')) && <button onClick={() => reload()} disabled={!(status === 'ready' || status === 'error')}>Regenerate</button>}
-
-
-                    <form onSubmit={handleSubmit}>
-                        <input name="prompt" value={input} onChange={handleInputChange} disabled={status !== 'ready' || error != null} className='border' />
-                        <button type="submit">Submit</button>
-                    </form>
-
-                </div>
+                <p>Continue a previous chat:</p>
+                {chatIds.data?.map((i) => <button key={i} onClick={() => setSelectedChat(i)}> {i} </button>)}
+                {/* || createdChat */}
+                {selectedChat && (
+                    isChatLoading ? (
+                        <div>Loading chat...</div>
+                    ) : chatData?.messages ? (
+                        <Chat id={selectedChat} initialMessages={chatData.messages} />
+                    ) : (
+                        <div>No messages found.</div>
+                    )
+                )}
             </main>
         </>
     );
