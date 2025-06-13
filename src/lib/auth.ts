@@ -25,14 +25,15 @@ export const auth = betterAuth({
     },
     socialProviders: {
         google: {
-            clientId: GOOGLE_CLIENT_ID as string,
-            clientSecret: GOOGLE_CLIENT_SECRET as string,
+            clientId: GOOGLE_CLIENT_ID,
+            clientSecret: GOOGLE_CLIENT_SECRET,
         },
         github: {
-            clientId: process.env.GITHUB_CLIENT_ID as string,
-            clientSecret: process.env.GITHUB_CLIENT_SECRET as string,
+            clientId: GITHUB_CLIENT_ID,
+            clientSecret: GITHUB_CLIENT_SECRET,
         },
     },
+    trustedOrigins: ["http://localhost:3000", "https://chatbot-ii0sklmw4-angi09387-gmailcoms-projects.vercel.app"],
 
     // the nextCookies plugin will automatically set cookies for you whenever a Set-Cookie header is present in the response
     plugins: [nextCookies()] // make sure this is the last plugin in the array

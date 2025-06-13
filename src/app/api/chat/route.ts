@@ -1,11 +1,11 @@
 import { openai } from '@ai-sdk/openai';
-import { streamText, type CoreMessage, appendResponseMessages, appendClientMessage, createIdGenerator, type Message } from 'ai';
+import { streamText, appendResponseMessages, appendClientMessage, createIdGenerator, type Message } from 'ai';
 import { loadChat, saveChat } from '../../../tools/chat-store';
 import { z } from 'zod'
 import { DateType, type EventSearchParams } from '~/lib/eventsApiTypes';
 import getEvents from '~/lib/eventsApi';
 import { createResource } from '~/lib/actions/resources';
-import { type NewResourceParams, insertResourceSchema } from "~/server/db/schema";
+// import { type NewResourceParams, insertResourceSchema } from "~/server/db/schema";
 import { findRelevantContent } from '~/lib/ai/embedding';
 import { auth } from '~/lib/auth';
 import { headers } from 'next/headers';

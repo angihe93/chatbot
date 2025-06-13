@@ -3,9 +3,9 @@
 import { createIdGenerator } from 'ai';
 import { type Message, useChat } from '@ai-sdk/react';
 import { deleteLastMessage, deleteMessage } from '~/lib/data';
-import { useEffect, useState } from 'react';
-import getEvents from '~/lib/eventsApi';
-import { ArrowUp, CircleX, RotateCcw } from 'lucide-react';
+import { useEffect, useRef } from 'react';
+// import getEvents from '~/lib/eventsApi';
+import { CircleX, RotateCcw } from 'lucide-react';
 import ReactMarkdown from "react-markdown"
 
 // Simple Spinner component, can replace later
@@ -21,6 +21,8 @@ export default function Chat({
     // const [lastMsgId, setLastMsgId] = useState<string | undefined>('') // for delete previous msg in DB if user regenerates
     // useEffect(() => console.log(lastMsgId), [lastMsgId])
     // console.log("Chat id", id)
+    const formRef = useRef<HTMLFormElement>(null);
+
     const { input, handleInputChange, handleSubmit, messages, setMessages, addToolResult, status, stop, error, reload } = useChat({
         id, // use the provided chat ID
         initialMessages, // initial messages if provided
@@ -88,10 +90,24 @@ export default function Chat({
                                     case 'text': {
                                         // console.log("return text", part.text)
                                         // return message.id + part.text;
-                                        // list numbers don't show
-                                        // return <div key={index} className="prose"><ReactMarkdown>{part.text}</ReactMarkdown></div>
-                                        // return <div key={index} style={{ listStyleType: 'decimal', marginLeft: '1.5rem' }}><ReactMarkdown>{part.text}</ReactMarkdown></div>
-                                        return <div key={index}><ReactMarkdown>{part.text}</ReactMarkdown></div>
+                                        return <div key={index}>
+                                            {/* use custom component styling */}
+                                            {/* https://github.com/remarkjs/react-markdown?tab=readme-ov-file#appendix-b-components */}
+                                            {/* https://github.com/remarkjs/react-markdown/issues/832 */}
+                                            <ReactMarkdown components={{
+                                                ol({ children }) {
+                                                    return <ol className="list-inside list-decimal">{children}</ol>
+                                                },
+                                                ul({ children }) {
+                                                    return <ul className="list-inside list-disc">{children}</ul>
+                                                },
+                                                a: ({ node, ...props }) => (
+                                                    <a {...props} className="underline text-blue-600 hover:text-blue-800" />
+                                                ),
+                                            }}>
+                                                {part.text}
+                                            </ReactMarkdown>
+                                        </div>
                                     }
 
                                     // for tool invocations, distinguish between the tools and the state:
@@ -224,9 +240,12 @@ export default function Chat({
                                             case 'addResource': {
                                                 switch (part.toolInvocation.state) {
                                                     case 'partial-call':
+                                                        // const toolInvocation = part.toolInvocation as { toolName: string; state: string; args?: any; result?: any; toolCallId?: string }
+                                                        const toolInvocation = part.toolInvocation as { toolName: string; state: string; toolCallId?: string }
                                                         return (
                                                             <div key={callId}>
-                                                                called {part.toolInvocation?.args?.toolName}
+                                                                {/* called {part.toolInvocation?.args?.toolName} */}
+                                                                called {toolInvocation.toolName}
                                                             </div>
                                                         )
                                                 }
@@ -289,7 +308,7 @@ export default function Chat({
                         </button>
                     </div>}
 
-                <form onSubmit={handleSubmit}>
+                <form ref={formRef} onSubmit={handleSubmit}>
                     {/* <input value={input} onChange={handleInputChange} className='border' /> */}
                     {/* auto expand text box to fit input text: */}
                     <div className='w-[60vw]'>
@@ -305,7 +324,8 @@ export default function Chat({
                             onKeyDown={e => {
                                 if (e.key === "Enter" && !e.shiftKey) {
                                     e.preventDefault()
-                                    handleSubmit(e as any)
+                                    // handleSubmit(e as any)
+                                    formRef.current?.requestSubmit()
                                 }
                             }}
                         />
