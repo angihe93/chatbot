@@ -1,7 +1,14 @@
 import { openai } from '@ai-sdk/openai';
-import { streamText, type CoreMessage, appendResponseMessages, appendClientMessage, createIdGenerator, type Message } from 'ai';
+import { streamText, appendResponseMessages, appendClientMessage, createIdGenerator, type Message } from 'ai';
 import { loadChat, saveChat } from '../../../tools/chat-store';
 import { z } from 'zod'
+import { DateType, type EventSearchParams } from '~/lib/eventsApiTypes';
+import getEvents from '~/lib/eventsApi';
+import { createResource } from '~/lib/actions/resources';
+// import { type NewResourceParams, insertResourceSchema } from "~/server/db/schema";
+import { findRelevantContent } from '~/lib/ai/embedding';
+import { auth } from '~/lib/auth';
+import { headers } from 'next/headers';
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
@@ -18,6 +25,26 @@ const tools = {
             ];
         },
     },
+    searchEvents: {
+        description: 'call the getEvents API and return results to the user',
+        parameters: z.object({
+            start: z.number().optional(),
+            query: z.string(),
+            date: z.nativeEnum(DateType).optional(),
+            is_virtual: z.boolean().optional(),
+        }),
+        execute: async (parameters: EventSearchParams) => {
+            // console.log("searchEvents params", parameters)
+            const sendParams = {
+                ...parameters,
+                date: parameters.date !== undefined ? DateType[parameters.date] : undefined
+            };
+            console.log("searchEvents paramsToSend", sendParams)
+            const result = await getEvents(parameters)
+            return { ...result, data: result.data.map(event => ({ name: event.name, description: event.description, date_human_readable: event.date_human_readable, link: event.link })) }
+            // return await getEvents(parameters);
+        }
+    },
     // client-side tool that starts user interaction:
     askForConfirmation: {
         description: 'Ask the user for confirmation.',
@@ -31,7 +58,25 @@ const tools = {
             'Get the user location. Always ask for confirmation before using this tool.',
         parameters: z.object({}),
     },
+    addResource: {
+        description: `add a resource to your knowledge base.
+          If the user provides a random piece of knowledge unprompted, use this tool without asking for confirmation.`,
+        parameters: z.object({
+            content: z
+                .string()
+                .describe('the content or resource to add to the knowledge base'),
+        }),
+        execute: async ({ content }: { content: string }) => createResource({ content }),
+    },
+    getInformation: {
+        description: `get information from your knowledge base to answer questions.`,
+        parameters: z.object({
+            question: z.string().describe('the users question'),
+        }),
+        execute: async ({ question }: { question: string }) => findRelevantContent(question),
+    },
 }
+
 
 function errorHandler(error: unknown) {
     if (error == null) {
@@ -50,6 +95,34 @@ function errorHandler(error: unknown) {
 }
 
 export async function POST(req: Request) {
+
+    // Get user authentication status
+    const session = await auth.api.getSession({
+        headers: await headers(),
+    });
+
+    if (!session?.user) {
+        console.log("User not authenticated, redirecting to login");
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+    }
+
+    // Log authentication status
+    console.log('=== POST CHAT API REQUEST AUTH STATUS ===');
+    if (session?.user) {
+        console.log('✅ User authenticated:', {
+            userId: session.user.id,
+            email: session.user.email,
+            name: session.user.name,
+            timestamp: new Date().toISOString(),
+        });
+    } else {
+        console.log('❌ User not authenticated', {
+            timestamp: new Date().toISOString(),
+        });
+    }
+    console.log('==================================');
+
+
     // const { messages, id } = await req.json() //as { messages: CoreMessage[] }
     // get the last message from the client:
     // const { message_, id_ } = await req.json();
@@ -94,7 +167,10 @@ export async function POST(req: Request) {
         const result = streamText({
             // model: openai('gpt-4-turbo'),
             model: openai('gpt-4o'),
-            system: 'You are a helpful assistant.',
+            // system: 'You are a helpful assistant.',
+            system: `You are a helpful assistant. Check your knowledge base before answering any questions.
+    Only respond to questions using information from tool calls.
+    if no relevant information is found in the tool calls, respond, "Sorry, I don't know."`,
             messages: messages,
             async onFinish({ response }) {
                 await saveChat({
