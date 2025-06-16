@@ -66,10 +66,10 @@ export function LoginForm({
     console.log(values)
     const { success, message } = await signIn(values.email, values.password)
     if (success) {
-      toast.success(message as string)
+      toast.success(message)
       router.push("/")
     } else {
-      toast.error(message as string)
+      toast.error(message)
     }
     setIsLoading(false)
   }

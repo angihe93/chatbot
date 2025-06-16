@@ -8,9 +8,9 @@ import { api } from "~/trpc/react"
 
 
 // Simple Spinner component, can replace later
-function Spinner() {
-    return <span>Loading...</span>;
-}
+// function Spinner() {
+//     return <span>Loading...</span>;
+// }
 
 export default function Page() {
     const { messages, setMessages, input, handleInputChange, handleSubmit, status, stop, error, reload } = useChat({
