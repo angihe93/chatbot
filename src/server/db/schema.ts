@@ -33,7 +33,7 @@ export const chats = createTable(
   "chat",
   (d) => ({
     id: d.varchar({ length: 256 }).primaryKey(),
-    // userId: d.varchar({ length: 256 }).references(()=>users.id).notNull(),
+    userId: d.varchar({ length: 256 }).references(() => users.id).notNull(),
     createdAt: d
       .timestamp({ withTimezone: true })
       .default(sql`CURRENT_TIMESTAMP`)
