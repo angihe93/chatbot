@@ -1,12 +1,14 @@
 import { openai } from '@ai-sdk/openai';
-import { streamText, type CoreMessage, appendResponseMessages, appendClientMessage, createIdGenerator, type Message } from 'ai';
+import { streamText, appendResponseMessages, appendClientMessage, createIdGenerator, type Message } from 'ai';
 import { loadChat, saveChat } from '../../../tools/chat-store';
 import { z } from 'zod'
 import { DateType, type EventSearchParams } from '~/lib/eventsApiTypes';
 import getEvents from '~/lib/eventsApi';
 import { createResource } from '~/lib/actions/resources';
-import { type NewResourceParams, insertResourceSchema } from "~/server/db/schema";
+// import { type NewResourceParams, insertResourceSchema } from "~/server/db/schema";
 import { findRelevantContent } from '~/lib/ai/embedding';
+import { auth } from '~/lib/auth';
+import { headers } from 'next/headers';
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
@@ -93,6 +95,34 @@ function errorHandler(error: unknown) {
 }
 
 export async function POST(req: Request) {
+
+    // Get user authentication status
+    const session = await auth.api.getSession({
+        headers: await headers(),
+    });
+
+    if (!session?.user) {
+        console.log("User not authenticated, redirecting to login");
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+    }
+
+    // Log authentication status
+    console.log('=== POST CHAT API REQUEST AUTH STATUS ===');
+    if (session?.user) {
+        console.log('✅ User authenticated:', {
+            userId: session.user.id,
+            email: session.user.email,
+            name: session.user.name,
+            timestamp: new Date().toISOString(),
+        });
+    } else {
+        console.log('❌ User not authenticated', {
+            timestamp: new Date().toISOString(),
+        });
+    }
+    console.log('==================================');
+
+
     // const { messages, id } = await req.json() //as { messages: CoreMessage[] }
     // get the last message from the client:
     // const { message_, id_ } = await req.json();

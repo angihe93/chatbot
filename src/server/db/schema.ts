@@ -33,6 +33,7 @@ export const chats = createTable(
   "chat",
   (d) => ({
     id: d.varchar({ length: 256 }).primaryKey(),
+    userId: d.varchar({ length: 256 }).references(() => users.id).notNull(),
     createdAt: d
       .timestamp({ withTimezone: true })
       .default(sql`CURRENT_TIMESTAMP`)
@@ -106,3 +107,79 @@ export const insertResourceSchema = createSelectSchema(resources)
 export type NewResourceParams = {
   content: string; // check
 };
+
+
+// Auth table for better auth
+// https://www.better-auth.com/docs/concepts/database#user
+// https://www.better-auth.com/docs/installation#create-database-tables
+// schema from npx @better-auth/cli generate with slight mods to be compatible with existing schema
+export const users = createTable(
+  "user",
+  (d) => ({
+    id: d.varchar({ length: 256 }).primaryKey(),
+    name: d.varchar({ length: 256 }).notNull(),
+    email: d.varchar({ length: 256 }).notNull().unique(),
+    emailVerified: d.boolean().notNull().default(false),
+    image: d.text(),
+    createdAt: d.timestamp({ withTimezone: true })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+    updatedAt: d.timestamp({ withTimezone: true })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+  })
+)
+
+export const sessions = createTable(
+  "session",
+  (d) => ({
+    id: d.varchar({ length: 256 }).primaryKey(),
+    expiresAt: d.timestamp({ withTimezone: true }).notNull(),
+    token: d.text().notNull().unique(),
+    createdAt: d.timestamp({ withTimezone: true }).notNull(),
+    updatedAt: d.timestamp({ withTimezone: true }).notNull(),
+    ipAddress: d.text(),
+    userAgent: d.text(),
+    userId: d.varchar({ length: 256 }).references(() => users.id, { onDelete: "cascade" }).notNull(),
+  })
+)
+
+export const accounts = createTable(
+  "account",
+  (d) => ({
+    id: d.varchar({ length: 256 }).primaryKey(),
+    accountId: d.varchar({ length: 256 }).notNull(),
+    providerId: d.varchar({ length: 256 }).notNull(),
+    userId: d.varchar({ length: 256 }).references(() => users.id, { onDelete: "cascade" }).notNull(),
+    accessToken: d.text(),
+    refreshToken: d.text(),
+    idToken: d.text(),
+    accessTokenExpiresAt: d.timestamp({ withTimezone: true }),
+    refreshTokenExpiresAt: d.timestamp({ withTimezone: true }),
+    scope: d.text(),
+    password: d.text(),
+    createdAt: d.timestamp({ withTimezone: true }).notNull(),
+    updatedAt: d.timestamp({ withTimezone: true }).notNull(),
+  })
+)
+
+export const verifications = createTable(
+  "verification",
+  (d) => ({
+    id: d.varchar({ length: 256 }).primaryKey(),
+    identifier: d.text().notNull(),
+    value: d.text().notNull(),
+    expiresAt: d.timestamp({ withTimezone: true }).notNull(),
+    createdAt: d.timestamp({ withTimezone: true })
+      .default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: d.timestamp({ withTimezone: true })
+      .default(sql`CURRENT_TIMESTAMP`),
+  })
+)
+
+export const schema = {
+  user: users, // <-- alias to match expected model name
+  session: sessions,
+  account: accounts,
+  verification: verifications
+}

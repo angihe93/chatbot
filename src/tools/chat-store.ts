@@ -3,7 +3,11 @@ import { existsSync, mkdirSync } from 'fs';
 import { readFile, writeFile } from 'fs/promises';
 import path from 'path';
 import { type Message } from '@ai-sdk/react';
-import { createChatDB, loadChatDB, saveChatDB } from '~/server/db/db';
+import { createChatDB, findChatDB, loadChatDB, saveChatDB } from '~/server/db/db';
+import { auth } from '~/lib/auth';
+import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
+
 
 // Our example chat store implementation uses files to store the chat messages. In a real-world application, you would use a database or a cloud storage service, and get the chat ID from the database. That being said, the function interfaces are designed to be easily replaced with other implementations.
 
@@ -13,10 +17,50 @@ import { createChatDB, loadChatDB, saveChatDB } from '~/server/db/db';
 //     return id;
 // }
 
-export async function createChat(): Promise<string> {
-    const id = generateId(); // generate a unique chat ID
-    const chat = await createChatDB(id)
-    return chat.id
+export async function findOrCreateChat(): Promise<string> {
+
+    // Get user authentication status
+    const session = await auth.api.getSession({
+        headers: await headers(),
+    });
+
+    if (!session?.user) {
+        console.log("User not authenticated, redirecting to login");
+        redirect('/login')
+        // return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+    }
+
+    // Log authentication status
+    console.log('=== createChat REQUEST AUTH STATUS ===');
+    if (session?.user) {
+        console.log('✅ User authenticated:', {
+            userId: session.user.id,
+            email: session.user.email,
+            name: session.user.name,
+            timestamp: new Date().toISOString(),
+        });
+    } else {
+        console.log('❌ User not authenticated', {
+            timestamp: new Date().toISOString(),
+        });
+
+        redirect('/login')
+    }
+    console.log('==================================');
+
+    const userId = session.user.id
+    const chatId = await findChatDB(userId)
+
+    if (typeof chatId !== 'string') {
+        const id = generateId(); // generate a unique chat ID
+        const chat = await createChatDB(id, userId)
+        console.log("no chat for user, created chat", chat.id)
+        return chat.id
+    }
+    else {
+        console.log("found chat for user, chatId", chatId)
+        return chatId
+    }
 }
 
 // function getChatFile(id: string): string {

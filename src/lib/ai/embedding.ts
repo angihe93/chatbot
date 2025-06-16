@@ -3,7 +3,7 @@ import { openai } from '@ai-sdk/openai';
 import { db } from '~/server/db';
 import { cosineDistance, desc, gt, sql } from 'drizzle-orm';
 import { embeddings } from '~/server/db/schema';
-db
+
 const embeddingModel = openai.embedding('text-embedding-ada-002');
 
 // to create an embedding, you will start with a piece of source material (unknown length), break it down into smaller chunks, embed each chunk, and then save the chunk to the database. Let’s start by creating a function to break the source material into small chunks.
