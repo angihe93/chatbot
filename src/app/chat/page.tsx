@@ -3,7 +3,8 @@ import { findOrCreateChat } from '../../tools/chat-store';
 import { auth } from '~/lib/auth';
 import { headers } from 'next/headers';
 
-
+// this is a react server component, not normal react client
+// so it can do server features like talking to DB
 export default async function Page() {
     // Get user authentication status
     const session = await auth.api.getSession({

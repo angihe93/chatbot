@@ -22,6 +22,11 @@ export async function findChatDB(userId: string): Promise<string | null> {
     else return getChat[0]!.id
 }
 
+export async function getChatsDB(userId: string): Promise<string[]> {
+    const getChats = await db.select({ id: chats.id }).from(chats).where(eq(chats.userId, userId))
+    return getChats.map((i) => i.id)
+}
+
 export async function loadChatDB(id: string): Promise<typeof chat_messages.$inferSelect[]> {
     const getMessages = await db.select().from(chat_messages).where(eq(chat_messages.chatId, id))
     if (!getMessages) {
