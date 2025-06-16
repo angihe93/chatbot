@@ -3,9 +3,10 @@ import { chat_messages, chats } from '~/server/db/schema';
 import { eq } from 'drizzle-orm'
 import { type Message } from '@ai-sdk/react';
 
-export async function createChatDB(id: string): Promise<typeof chats.$inferSelect> {
+export async function createChatDB(id: string, userId: string): Promise<typeof chats.$inferSelect> {
     const chat: typeof chats.$inferInsert = {
         id: id,
+        userId: userId
     }
     await db.insert(chats).values(chat)
     const [getChat] = await db.select().from(chats).where(eq(chats.id, id));
@@ -13,6 +14,17 @@ export async function createChatDB(id: string): Promise<typeof chats.$inferSelec
         throw new Error(`Chat with id ${id} not found after insertion.`);
     }
     return getChat;
+}
+
+export async function findChatDB(userId: string): Promise<string | null> {
+    const getChat = await db.select().from(chats).where(eq(chats.userId, userId))
+    if (!getChat.length) return null
+    else return getChat[0]!.id
+}
+
+export async function getChatsDB(userId: string): Promise<string[]> {
+    const getChats = await db.select({ id: chats.id }).from(chats).where(eq(chats.userId, userId))
+    return getChats.map((i) => i.id)
 }
 
 export async function loadChatDB(id: string): Promise<typeof chat_messages.$inferSelect[]> {
